@@ -21,22 +21,57 @@ const peoples: People[] = [
   {age: 4, name: "kim"}
 ]
 
-function _map_under30 (peoples:People[]):People[] {
-  let new_peoples: People[] = [];
-  for(let i: number = 0; i<peoples.length; i++) {
-    if(peoples[i].age<=30) {
-      new_peoples.push(peoples[i]);
-    }
+//curry
+function _curry(func:Function): Function {  
+  return function (a: unknown, b: unknown) {
+    return arguments.length==2 ? func(a,b): (b: unknown) => func(a,b)
   }
-  return new_peoples;
 }
 
-// console.log(_map_under30(peoples));
-
-function _each(list:unknown[], iter:Function) {
-  for(let i:number=0; i<list.length; i++) {
-    iter(list[i]);
+function _curryr(func:Function): Function {  
+  return function (a: unknown, b: unknown) {
+    return arguments.length==2 ? func(a,b): (b: unknown) => func(b,a)
   }
+}
+
+let _get = _curryr(function (obj: any, key:string) {
+  return obj==null ? undefined : obj[key];
+});
+
+function _is_obj(obj: any) {
+  return typeof obj == 'object' && !!obj;
+}
+
+function _keys(obj:any) {
+  return _is_obj(obj) ? Object.keys(obj) : [];
+}
+
+const _length = _get('length');
+
+function _each(list:any, iter:Function): unknown[]{
+  const keys = _keys(list);
+  const len = _length(keys);
+  for(let i:number=0; i<len; i++) {
+    iter(list[keys[i]]);
+  }
+  return list;
+}
+
+//reduce
+function _rest(list:unknown[], num?: number) {
+  let slice = Array.prototype.slice;
+  return slice.call(list, num || 1);
+}
+
+function _reduce(list:unknown[], iter:Function, memo?:unknown) {
+  if(arguments.length == 2) {
+    memo = list[0];
+    list = _rest(list);
+  }
+  _each(list, function (val: unknown){
+    memo = iter(memo, val);
+  });
+  return memo;
 }
 
 function _filter(list:unknown[], predi: Function){
@@ -57,45 +92,41 @@ function _map(list:unknown[], mapper: Function) {
   return new_peoples;
 }
 
-console.log(_filter(peoples, (people:People)=>people.age<=30));
-console.log(_map(peoples, (poeple: People)=>poeple.name));
-
-//curry
-function _curry(func:Function): Function {  
-  return function (a: unknown, b: unknown) {
-    return arguments.length==2 ? func(a,b): (b: unknown) => func(a,b)
-  }
-}
-
-
-function _curryr(func:Function): Function {  
-  return function (a: unknown, b: unknown) {
-    return arguments.length==2 ? func(a,b): (b: unknown) => func(b,a)
-  }
-}
-
-let add = _curry((a:number, b:number)=>a+b);
-let add20 = add(20);
-console.log(add20(10));
-
-let sub = _curryr((a:number, b:number)=>a-b);
-let sub5 = sub(5);
-console.log(sub5(10));
-console.log(sub(4,6));
-
-//get
-let _get = _curryr(function (obj: any, key:string) {
-  return obj==null ? undefined : obj[key];
-});
-
 let getName = _get('name');
 
-console.log(peoples[0].name);
-console.log(getName(peoples[0]));
+// pipe
+function _pipe(...funcs:Function[]) {
+  return (arg:unknown) => _reduce(funcs, 
+    function (arg2: unknown, fn:Function)
+    {
+      return fn(arg2);
+    }
+    , arg);
+}
 
-console.log(
-  _map(
-    _filter(peoples, (val:People)=>30>=val.age), getName)
-  );
+function _go(arg:unknown, ...funcs:Function[]) {
+  _pipe.apply(null, funcs)(arg);
+}
 
-  //reduce
+_go(
+  1, 
+  function (a:number) {return a+1;},
+  function (a:number) {return a*10;},
+  console.log
+);
+
+const _mapr = _curryr(_map);
+const _filterr = _curryr(_filter);
+
+_go(peoples, 
+  _filterr((people:People) => people.age>30),
+  _mapr(getName),
+  console.log
+);
+
+_go(
+  {3:'kk', 4:'jj', 7:'ll'},
+  _mapr((val:string)=>val.toUpperCase()),
+  console.log
+)
+//_each(null, console.log);
