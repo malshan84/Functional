@@ -74,7 +74,7 @@ function _reduce(list:unknown[], iter:Function, memo?:unknown) {
   return memo;
 }
 
-function _filter(list:unknown[], predi: Function){
+function _filter_org(list:unknown[], predi: Function){
   let new_peoples:unknown[] = [];
   _each(list, (val:unknown)=>{
     if(predi(val)) {
@@ -84,7 +84,7 @@ function _filter(list:unknown[], predi: Function){
   return new_peoples;
 }
 
-function _map(list:unknown[], mapper: Function) {
+function _map_org(list:unknown[], mapper: Function) {
   let new_peoples:unknown[] = [];
   _each(list, (val: unknown)=>{
     new_peoples.push(mapper(val));
@@ -115,18 +115,45 @@ _go(
   console.log
 );
 
-const _mapr = _curryr(_map);
-const _filterr = _curryr(_filter);
+const _map = _curryr(_map_org);
+const _filter = _curryr(_filter_org);
 
 _go(peoples, 
-  _filterr((people:People) => people.age>30),
-  _mapr(getName),
+  _filter((people:People) => people.age>30),
+  _map(getName),
   console.log
 );
 
 _go(
   {3:'kk', 4:'jj', 7:'ll'},
-  _mapr((val:string)=>val.toUpperCase()),
+  _map((val:string)=>val.toUpperCase()),
   console.log
 )
-//_each(null, console.log);
+
+console.log('\n\n===============================\n\n');
+
+function _identity(val: unknown) {
+  return val;
+}
+
+function _values(data: unknown) {
+  return _map(data,_identity);
+}
+
+function _pluck(list:unknown[], key:string) {
+  return _map(list, _get(key));
+}
+
+function _negate(func: Function) {
+  return (data: unknown) => !func(data);
+}
+
+function _reject(list:unknown[], predi: Function) {
+  return _filter(list,_negate(predi));
+}
+
+function _compact(list: unknown[]) {
+  return _filter(list, _identity);
+}
+
+console.log(_compact([1,2,0,false, []]));
