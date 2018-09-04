@@ -17,8 +17,9 @@ const peoples: People[] = [
   {age: 20, name: "kim"},
   {age: 32, name: "park"},
   {age: 19, name: "choi"},
-  {age: 40, name: "kang"},
-  {age: 4, name: "kim"}
+  {age: 4, name: "kang"},
+  {age: 40, name: "kim"},
+  {age: 20, name: "choi"}
 ]
 
 //curry
@@ -132,28 +133,102 @@ _go(
 
 console.log('\n\n===============================\n\n');
 
-function _identity(val: unknown) {
+const _identity = _curryr(function (val: unknown) {
   return val;
-}
+});
 
-function _values(data: unknown) {
+const _values = _curryr(function (data: unknown) {
   return _map(data,_identity);
-}
+});
 
-function _pluck(list:unknown[], key:string) {
+const _pluck = _curryr(function (list:unknown[], key:string) {
   return _map(list, _get(key));
-}
+});
 
-function _negate(func: Function) {
+const _negate = _curryr(function (func: Function) {
   return (data: unknown) => !func(data);
-}
+});
 
-function _reject(list:unknown[], predi: Function) {
+const _reject = _curryr(function (list:unknown[], predi: Function) {
   return _filter(list,_negate(predi));
-}
+});
 
-function _compact(list: unknown[]) {
+const _compact = _curryr(function (list: unknown[]) {
   return _filter(list, _identity);
+});
+
+const _find = _curryr(function (list:any, predi:Function): unknown{
+  const keys = _keys(list);
+  const len = _length(keys); 
+  for(let i:number=0; i<len; i++) {
+    const val = list[keys[i]];
+    if(predi(val)){
+      return val;
+    }
+  }
+});
+
+const _find_index = _curryr(function (list:any, predi:Function): number{
+  const keys = _keys(list);
+  const len = _length(keys); 
+  for(let i:number=0; i<len; i++) {
+    const val = list[keys[i]];
+    if(predi(val)){
+      return i;
+    }
+  }
+  return -1;
+});
+
+const _some = _curryr(function (list:any, predi?:Function): boolean {
+  return _find_index(list, predi||_identity) !== -1;
+});
+
+const _every = _curryr(function (list: any, predi?:Function): boolean {
+  return _find_index(list, _negate(predi||_identity)) === -1;
+});
+
+const _max = _curryr(function (list: any) {
+  return _reduce(list, (a:any,b:any)=>a>b?a:b);
+});
+
+const _min = _curryr(function (list: any) {
+  return _reduce(list, (a:any,b:any)=>a<b?a:b);
+});
+
+const _max_by = _curryr(function (list: any, iter: Function) {
+  return _reduce(list, (a:any,b:any)=>iter(a)>iter(b)?a:b);
+});
+
+const _min_by = _curryr(function (list: any, iter: Function) {
+  return _reduce(list, (a:any,b:any)=>iter(a)<iter(b)?a:b);
+});
+
+function _push(obj: any, key: any, val: unknown) {
+  (obj[key] = obj[key] || []).push(val);
+  return obj;
 }
 
-console.log(_compact([1,2,0,false, []]));
+const _group_by = _curryr(
+  function (list: any[], iter: Function) {
+    return _reduce (list, function (grouped: any, val: undefined) {
+      return _push(grouped, iter(val), val);
+    },{})
+  }
+);
+
+function _inc(count: any, key: number) {
+  count[key] ? count[key]++ : count[key] = 1;
+  return count;
+}
+
+const _count_by = _curryr(
+  function (list: any[], iter: Function) {
+    return _reduce (list, function (count: any, val: undefined) {
+      return  _inc(count, iter(val));
+    },{})
+  }
+);
+
+//console.log(_group_by(peoples, (data:People)=>data.age));
+console.log(_count_by(peoples, (data:People)=>data.name));
